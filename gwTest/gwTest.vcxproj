@@ -79,7 +79,7 @@
       <AdditionalIncludeDirectories>..\gwCore;..\gwWidgets;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>NotSet</SubSystem>
       <AdditionalLibraryDirectories>..\build\bin\x64\debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>gwCored.lib;gwWidgetsd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>

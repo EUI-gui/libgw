@@ -46,6 +46,16 @@ void GWObject::setObjectName(std::string objectName)
 	m_private->m_objectName = objectName;
 }
 
+void GW::GWObject::setParent(GWObject* object)
+{
+	GWObject* _parent = this->getParent();
+	if (_parent)
+	{
+		_parent->removeChild(this);
+	}
+	object->addChild(this);
+}
+
 void GWObject::addChild(GWObject* child)
 {
 	this->m_private->m_childs.push_back(child);
@@ -58,6 +68,11 @@ void GW::GWObject::removeChild(GWObject* child)
 		if (*iter == child)
 			this->m_private->m_childs.erase(iter);
 	}
+}
+
+std::vector<GWObject*> GW::GWObject::getChilds()
+{
+	return m_private->m_childs;
 }
 
 GWObject* GW::GWObject::getParent()

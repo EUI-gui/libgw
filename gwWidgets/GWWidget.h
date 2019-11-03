@@ -32,7 +32,16 @@ namespace GW
 		void show(GWWidget::windowType type = GW_NORMAL);
 		void hide();
 		void close();
-		GWPoint getPos();
+		void update();
+
+		void setParent(GWWidget* parent);
+		GWWidget* getParent();
+
+		GWPoint pos();
+		void resize(int width, int height);
+		void resize(GWSize size);
+
+		void* WinID();
 	public:
 		virtual void createEvent();
 		virtual void showEvent();

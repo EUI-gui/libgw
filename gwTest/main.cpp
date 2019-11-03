@@ -1,6 +1,6 @@
 #include "GWWidget.h"
 #include "GWApplication.h"
-
+#include <windows.h>
 using namespace GW;
 
 class Signaler : public GWObject
@@ -26,6 +26,23 @@ public slots:
 		std::cout << "msg:" << msg << std::endl;
 		std::cout << "number:" << number << endl;
 	}
+public:
+	virtual void paintEvent()
+	{
+		RECT rect = { 0 };
+		::GetClientRect(HWND(WinID()), &rect);
+
+		HDC dc = GetDC(HWND(WinID()));
+		HPEN newPen = CreatePen(PS_SOLID, 3, RGB(255, 0, 0));
+		HPEN oldPen = (HPEN)SelectObject(dc, newPen);
+		Rectangle(dc, rect.left, rect.top, rect.right, rect.bottom);
+
+		ReleaseDC(HWND(WinID()), dc);
+		SelectObject(dc, oldPen);
+		std::cout << this << ":paintEvent:вс" << endl;
+		//UpdateWindow(HWND(this->WinID()));
+		
+	}
 };
 
 int main(int argc, char*argv[])
@@ -34,10 +51,14 @@ int main(int argc, char*argv[])
 
 	Signaler signaler;
 
-	slotWidget w(&app);
+	GWWidget w(&app);
 	w.show();
 
-	GWObject::connect(&signaler, signaler.sig, &w, &slotWidget::sltfunc);
+	slotWidget w2(&w);
+	w2.resize(800,600);
+	w2.show();
+
+	GWObject::connect(&signaler, signaler.sig, &w2, &slotWidget::sltfunc);
 
 	signaler.emitSignal();
 

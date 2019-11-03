@@ -11,11 +11,28 @@ public:
 	GWRect(const GWPoint& topleft, const GWSize& size);
 	GWRect(int left, int top, int width, int height);
 	GWRect(const GWRect& point);
-	virtual ~GWRect();
 
 public:
 	inline int x() const;
 	inline int y() const;
+	inline int width() const;
+	inline int height() const;
+
+public:
+	inline bool operator==(const GWRect& p);
+	inline bool operator!=(const GWRect& p);
+
+	inline const GWRect operator+(const GWRect& p);
+	inline GWRect& operator+=(const GWRect& p);
+
+	inline const GWRect operator-(const GWRect& p);
+	inline GWRect& operator-=(const GWRect& p);
+
+	inline const GWRect operator*(const GWRect& p);
+	inline GWRect& operator*=(const GWRect& p);
+
+	inline const GWRect operator/(const GWRect& p);
+	inline GWRect& operator/=(const GWRect& p);
 
 private:
 	int m_x;
