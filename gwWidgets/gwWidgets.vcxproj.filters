@@ -18,9 +18,45 @@
     <ClCompile Include="GWWidget.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="GWWidget_p.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="GWMessageBox.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="GWImage.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="GWPainter.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="GWPen.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="GWColor.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GWWidget.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="GWWidget_p.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="GWMessageBox.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="GWImage.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="GWPainter.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="GWPen.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="GWColor.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

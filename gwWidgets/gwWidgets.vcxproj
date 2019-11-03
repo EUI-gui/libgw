@@ -141,10 +141,22 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="GWColor.cpp" />
+    <ClCompile Include="GWImage.cpp" />
+    <ClCompile Include="GWMessageBox.cpp" />
+    <ClCompile Include="GWPainter.cpp" />
+    <ClCompile Include="GWPen.cpp" />
     <ClCompile Include="GWWidget.cpp" />
+    <ClCompile Include="GWWidget_p.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="GWColor.h" />
+    <ClInclude Include="GWImage.h" />
+    <ClInclude Include="GWMessageBox.h" />
+    <ClInclude Include="GWPainter.h" />
+    <ClInclude Include="GWPen.h" />
     <ClInclude Include="GWWidget.h" />
+    <ClInclude Include="GWWidget_p.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

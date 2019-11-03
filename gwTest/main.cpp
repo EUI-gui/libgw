@@ -1,6 +1,7 @@
 #include "GWWidget.h"
 #include "GWApplication.h"
 #include <windows.h>
+#include "GWPainter.h"
 using namespace GW;
 
 class Signaler : public GWObject
@@ -29,19 +30,15 @@ public slots:
 public:
 	virtual void paintEvent()
 	{
-		RECT rect = { 0 };
-		::GetClientRect(HWND(WinID()), &rect);
+		GWPainter painter(this);
+		painter.save();
+		{
+			painter.setPen(GWPen(GWColor::GlobalColor::red, 5));
+			painter.drawRect(this->rect());
+		}
+		painter.restore();
 
-		HDC dc = GetDC(HWND(WinID()));
-		HPEN newPen = CreatePen(PS_SOLID, 3, RGB(255, 0, 0));
-		HPEN oldPen = (HPEN)SelectObject(dc, newPen);
-		Rectangle(dc, rect.left, rect.top, rect.right, rect.bottom);
-
-		ReleaseDC(HWND(WinID()), dc);
-		SelectObject(dc, oldPen);
 		std::cout << this << ":paintEvent:вс" << endl;
-		//UpdateWindow(HWND(this->WinID()));
-		
 	}
 };
 
