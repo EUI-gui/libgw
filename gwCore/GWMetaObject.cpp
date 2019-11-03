@@ -2,233 +2,157 @@
 #include <string>
 #include <algorithm>
 
-struct SenderPair
+namespace GW
 {
-	SenderPair(GWMetaObject* _sender, SIGNAL_POINTER(void*) _signal)
-		:sender(_sender), signal(_signal)
-	{ }
-
-	bool operator==(const SenderPair& r) const
+	class SIGNALS
 	{
-		return r.sender == sender && r.signal == signal;
+	public:
+		SIGNALS(GWMetaObject* _sender, std::list<GWSlot*>* _signal)
+			:sender(_sender), signal(_signal) { }
+		bool operator==(const SIGNALS& r) const { return r.sender == sender && r.signal == signal; }
+	public:
+		GWMetaObject* sender;
+		std::list<GWSlot*>* signal;
+	};
+
+	class GWReceiverFind
+	{
+	public:
+		GWReceiverFind(GWMetaObject* receiver) :m_receiver(receiver) {}
+		bool operator() (GWSlot*& other) { return other->m_receiver == this->m_receiver; }
+		bool operator() (GWMetaObject* receiver) { return this->m_receiver == receiver; }
+	private:
+		GWMetaObject* m_receiver;
+	};
+
+	class GWSenderFind
+	{
+	public:
+		GWSenderFind(GWMetaObject* s) :sender(s) {}
+		bool operator() (SIGNALS& other) { return other.sender == sender; }
+	private:
+		GWMetaObject* sender;
+	};
+
+	class GWMetaObjectPrivate
+	{
+	public:
+		~GWMetaObjectPrivate()
+		{
+			m_signals.clear();
+			m_senders.clear();
+		}
+
+		std::list<SIGNALS>  m_signals;
+		std::list<GWMetaObject*>  m_senders;
+	};
+
+	GWMetaObject::GWMetaObject()
+		:m_private(new GWMetaObjectPrivate)
+	{
 	}
 
-	GWMetaObject* sender;
-	SIGNAL_POINTER(void*) signal;
-};
-
-class GWMetaObjectPrivate
-{
-public:
-	GWMetaObjectPrivate(const char* nm) : strName(nm)
+	GWMetaObject::~GWMetaObject()
 	{
-		spLst.clear();
-		rLst.clear();
+		release();
+		delete m_private;
 	}
 
-	~GWMetaObjectPrivate()
+	void GWMetaObject::pushSignal(GWMetaObject* sender, std::list<GWSlot*>* signal)
 	{
-		spLst.clear();
-		rLst.clear();
+		SIGNALS sp(sender, signal);
+		m_private->m_signals.push_back(sp);
 	}
 
-	string   strName;
-	list<SenderPair>  spLst;
-	list<GWMetaObject*>  rLst;
-};
+	void GWMetaObject::freeSignal(GWMetaObject* sender, std::list<GWSlot*>* signal)
+	{
+		m_private->m_signals.remove(SIGNALS(sender, signal));
+	}
 
-GWMetaObject::GWMetaObject(const char* n)
-	:m_priv(new GWMetaObjectPrivate(NULL == n ? "" : n))
-{
+	void GWMetaObject::release()
+	{
+		for (auto signaIter = m_private->m_signals.begin(); signaIter != m_private->m_signals.end(); signaIter++)
+		{
+			auto signal = signaIter->signal;
+			signaIter->signal->remove_if(GWReceiverFind(this));
+			signaIter->sender->m_private->m_senders.remove_if(GWReceiverFind(this));
+		}
+
+		for (auto senderIter = m_private->m_senders.begin(); senderIter != m_private->m_senders.end(); senderIter++)
+		{
+			GWMetaObject* receiver = *senderIter;
+			receiver->m_private->m_signals.remove_if(GWSenderFind(this));
+		}
+	}
+
+	void GWMetaObject::pushSlot(GWMetaObject* receiver)
+	{
+		m_private->m_senders.push_front(receiver);
+	}
+
+	void GWMetaObject::freeSlot(GWMetaObject* receiver)
+	{
+		std::list<GWMetaObject*>::iterator it = std::find(m_private->m_senders.begin(), m_private->m_senders.end(), receiver);
+		if (it == m_private->m_senders.end()) return;
+		m_private->m_senders.erase(it);
+	}
+
+	bool GWMetaObject::__connect(GWMetaObject* sender, std::list<GWSlot*>* signal, GWMetaObject* receiver, void* slot)
+	{
+		if (sender == 0 || receiver == 0 || signal == 0 || slot == 0) return false;
+
+		GWSlot* m_slot = (GWSlot*)slot;
+
+		void* funcptr = 0;
+		void* _funcptr = 0;
+		memcpy(&funcptr, m_slot->m_slot, sizeof(void*));
+		memcpy(&_funcptr, funcptr, sizeof(void*));
+
+		for (auto sig : *signal)
+		{
+			if (*((GWSlot*)slot) == *sig)
+			{
+				return false;
+			}
+		}
+
+		signal->push_back(m_slot);
+		sender->pushSlot(receiver);
+		receiver->pushSignal(sender, signal);
+
+		return true;
+	}
+
+	bool GWMetaObject::__disconnect(GWMetaObject* sender, std::list<GWSlot*>* signal, GWMetaObject* receiver, void* slot)
+	{
+		bool _b = false;
+
+		if (sender == 0 || receiver == 0 || signal == 0 || slot == 0) return _b;
+
+		std::list< GWSlotFunction<GWMetaObject, void(void)>* >* SlotFunctionType = (std::list<GWSlotFunction<GWMetaObject, void(void)>*>*)signal;
+
+		void* funcptr = 0;
+		memcpy(&funcptr, slot, sizeof(void*));
+
+		for (auto iter = signal->begin(); iter != signal->end(); iter++)
+		{
+			auto _funcType = SlotFunctionType->begin();
+			void* savePtr = 0;
+			memcpy(&savePtr, &((*_funcType)->m_slotfunc),sizeof(void*));
+
+			if (savePtr == funcptr)
+			{
+				auto freePtr = *iter;
+				delete (freePtr);
+				signal->erase(iter);
+				break;
+			}
+			_funcType++;
+		}
+		sender->freeSlot(receiver);
+		receiver->freeSignal(sender, signal);
+		return _b;
+	}
+
 }
 
-GWMetaObject::~GWMetaObject()
-{
-	destructAsReceiver();
-
-	sigDestroyed();
-	destructAsSender();
-
-	delete m_priv;
-}
-
-void GWMetaObject::saveSenderPair(GWMetaObject* sender, SIGNAL_POINTER(void*) signal)
-{
-	SenderPair sp(sender, signal);
-	m_priv->spLst.push_back(sp);
-}
-
-void GWMetaObject::deleteSenderPair(GWMetaObject* sender, SIGNAL_POINTER(void*) signal)
-{
-	m_priv->spLst.remove(SenderPair(sender, signal));
-}
-
-class Receiver_Is
-{
-public:
-	GWMetaObject* receiver;
-
-	bool operator( ) (GWSlot*& obj1)
-	{
-		return obj1->m_receiver == this->receiver;
-	}
-
-	bool operator( ) (GWMetaObject* receiver)
-	{
-		return this->receiver == receiver;
-	}
-
-	Receiver_Is(GWMetaObject* r)
-		:receiver(r)
-	{
-
-	}
-};
-
-class Slot_Is_CppSlot
-{
-private:
-	GWSlot vslot;
-
-public:
-	bool operator( ) (GWSlot*& obj1)
-	{
-		return vslot == *obj1;
-	}
-
-	Slot_Is_CppSlot(const GWSlot& s)
-		:vslot(s)
-	{
-	}
-};
-
-int GWMetaObject::privConnect(GWMetaObject* sender, SIGNAL_POINTER(void*) signal, GWMetaObject* receiver, void* slot)
-{
-	if (sender == 0 || receiver == 0 || signal == 0 || slot == 0)
-	{
-		printf("can not connect %s::%p to %s::%p\n",
-			sender ? sender->name() : "(null)",
-			signal,
-			receiver ? receiver->name() : "(null)",
-			slot);
-		return -1;
-	}
-
-	GWSlot* vslot = (GWSlot*)slot;
-	SIGNAL_TYPE_ITERATOR(void*) it = std::find_if(signal->begin(), signal->end(), Slot_Is_CppSlot(*vslot));
-	if (it != signal->end())
-	{
-		printf("already connected\n");
-		return -2;
-	}
-
-	signal->push_back(vslot);
-
-	sender->saveReceiver(receiver);
-
-	receiver->saveSenderPair(sender, signal);
-
-	return 0;
-}
-
-void GWMetaObject::destructAsReceiver()
-{
-	list<SenderPair >::iterator it = m_priv->spLst.begin();
-	while (it != m_priv->spLst.end())
-	{
-		it->signal->remove_if(Receiver_Is(this));
-		it->sender->m_priv->rLst.remove_if(Receiver_Is(this));
-		++it;
-	}
-}
-
-class Sender_Is
-{
-public:
-	GWMetaObject* sender;
-
-	bool operator( ) (SenderPair& obj1)
-	{
-		return obj1.sender == sender;
-	}
-
-	Sender_Is(GWMetaObject* s)
-		:sender(s)
-	{
-
-	}
-};
-
-void GWMetaObject::destructAsSender()
-{
-	list<GWMetaObject*>::iterator it = m_priv->rLst.begin();
-	while (it != m_priv->rLst.end())
-	{
-		GWMetaObject* receiver = *it;
-		receiver->m_priv->spLst.remove_if(Sender_Is(this));
-		++it;
-	}
-}
-
-void GWMetaObject::saveReceiver(GWMetaObject* receiver)
-{
-	m_priv->rLst.push_front(receiver);
-}
-
-void GWMetaObject::deleteReceiver(GWMetaObject* receiver)
-{
-	list<GWMetaObject*>::iterator it = std::find(m_priv->rLst.begin(), m_priv->rLst.end(), receiver);
-	if (it == m_priv->rLst.end())
-	{
-		return;
-	}
-
-	m_priv->rLst.erase(it);
-}
-
-int GWMetaObject::privDisconnect(GWMetaObject* sender, SIGNAL_POINTER(void*) signal, GWMetaObject* receiver, void* slot)
-{
-	if (sender == 0 || receiver == 0 || signal == 0 || slot == 0)
-	{
-		printf("can not disconnect sender %s::%p from receiver %s::%p\n",
-			sender ? sender->name() : "(null)",
-			signal,
-			receiver ? receiver->name() : "(null)",
-			slot);
-		return -1;
-	}
-
-	SIGNAL_TYPE_ITERATOR(void*) it = std::find_if(signal->begin(), signal->end(), Slot_Is_CppSlot(GWSlot(slot, receiver)));
-	if (it == signal->end())
-	{
-		return -2;
-	}
-
-	signal->erase(it);
-
-	sender->deleteReceiver(receiver);
-
-	receiver->deleteSenderPair(sender, signal);
-
-	return 0;
-}
-
-
-const char* GWMetaObject::name() const
-{
-	return  m_priv->strName.c_str();
-}
-
-GWMetaObject& GWMetaObject::operator= (const GWMetaObject& /*src*/)
-{
-	return *this;
-}
-
-GWMetaObject::GWMetaObject(const GWMetaObject& /*src*/)
-	:m_priv(new GWMetaObjectPrivate(""))
-{
-}
-void GWSlot::operator() (const GWSlot&)
-{
-	printf("\n");
-}

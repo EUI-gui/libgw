@@ -18,9 +18,6 @@
     <ClCompile Include="GWApplication.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="GWMetaObject.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="GWObject.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -33,12 +30,12 @@
     <ClCompile Include="GWSize.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="GWMetaObject.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GWApplication.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="GWMetaObject.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="GWObject.h">
@@ -54,6 +51,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="GWSize.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="GWMetaObject.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

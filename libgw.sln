@@ -11,6 +11,10 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gwCore", "gwCore\gwCore.vcxproj", "{E36F4911-0403-4D52-A44D-D2CF500DCD62}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gwTest", "gwTest\gwTest.vcxproj", "{0174DFD5-1831-4D46-9D39-372A1C04B938}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AFCEE03-3EFE-4290-8650-60E8EC4D73B4} = {1AFCEE03-3EFE-4290-8650-60E8EC4D73B4}
+		{E36F4911-0403-4D52-A44D-D2CF500DCD62} = {E36F4911-0403-4D52-A44D-D2CF500DCD62}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

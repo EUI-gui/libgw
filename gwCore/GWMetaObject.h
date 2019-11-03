@@ -2,187 +2,133 @@
 #define GWMetaObject_H
 
 #include <list>
-#include <stdio.h>
 #include "libgwdefs.h"
-
-using namespace std;
-
-class GWMetaObjectPrivate;
-class GWMetaObject;
 
 #define slots
 #define signals public
 #define emit 
 
-template<typename No>
-class GWSlotAPI;
-template<typename Ret, typename ...Args>
-class  GWSlotAPI<Ret(Args...)>
+namespace GW
 {
-public:
-	explicit GWSlotAPI(void* slot, GWMetaObject* receiver = NULL)
-		:m_receiver(receiver),
-		m_slot(slot)
+	class GWMetaObjectPrivate;
+	class GWMetaObject;
+	template<typename T>
+	class GWSlotFunctionBase;
+	template<typename GWReceiver, typename GWReturn>
+	class GWSlotFunction;
+	template<typename T>
+	class GWSignal;
+
+	template<typename GWReturn, typename ...GWArgs>
+	class  GWSlotFunctionBase<GWReturn(GWArgs...)>
 	{
-	}
-	virtual ~GWSlotAPI() {}
-	virtual void operator() (Args&... args) = 0;
+	public:
+		explicit GWSlotFunctionBase(void* slot, GWMetaObject* receiver = nullptr)
+			:m_receiver(receiver),
+			m_slot(slot) {}
+		GWMetaObject* getReceiver() { return m_receiver; }
+		virtual void operator() (GWArgs&... args) = 0;
 
-private:
-	GWSlotAPI& operator= (const GWSlotAPI&) = delete;
+	private:
+		void* m_slot;
+		GWMetaObject* m_receiver;
+		friend class GWMetaObject;
+	};
 
-public:
-	bool operator==(const GWSlotAPI& other)
+	template<typename GWReceiver, typename GWReturn, typename ...GWArgs>
+	class GWSlotFunction<GWReceiver, GWReturn(GWArgs...)> : public GWSlotFunctionBase<GWReturn(GWArgs...)>
 	{
-		return other.m_slot == m_slot && other.m_receiver == m_receiver;
-	}
+	public:
+		typedef void (GWReceiver::* GWSlotPtr) (GWArgs...);
 
-public:
-	GWMetaObject* m_receiver;
-protected:
-	void* m_slot;
-};
+		GWSlotFunction(GWReceiver* receiver, GWSlotPtr slot)
+			: GWSlotFunctionBase<GWReturn(GWArgs...)>((void*)&slot, (GWMetaObject*)receiver),
+			m_slotfunc(slot) {}
 
-template<typename Receiver, typename No>
-class GWSlotCpp;
-template<typename Receiver, typename Ret, typename ...Args>
-class GWSlotCpp<Receiver, Ret(Args...)> : public GWSlotAPI<Ret(Args...)>
-{
-public:
-	typedef void (Receiver::* SlotFuncType) (Args...);
-
-	GWSlotCpp(Receiver* r, SlotFuncType slot)
-		: GWSlotAPI<Ret(Args...)>((void*)&slot, (GWMetaObject*)r),
-		m_class_slot(slot)
-	{
-	}
-
-	virtual ~GWSlotCpp() {}
-
-public:
-	void operator() (Args&... args)
-	{
-		(((Receiver*)GWSlotAPI<Ret(Args...)>::m_receiver)->*m_class_slot) (args...);
-	}
-
-private:
-	SlotFuncType m_class_slot;
-};
-
-
-template<typename No>
-class GWSignal;
-template<typename Ret, typename... Args>
-class  GWSignal<Ret(Args...)>
-{
-public:
-	typedef list<GWSlotAPI<Ret(Args...)>* > SlotLstType;
-
-public:
-	void __emit(Args... args)
-	{
-		for (auto it = _slotLst.begin(); it != _slotLst.end(); ++it)
+	public:
+		void operator() (GWArgs&... args)
 		{
-			(*(*it)) (args...);
+			(((GWReceiver*)GWSlotFunctionBase<GWReturn(GWArgs...)>::getReceiver())->*m_slotfunc) (args...);
 		}
-	}
 
-	void operator() (Args... args)
+	private:
+		GWSlotPtr m_slotfunc;
+		friend class GWMetaObject;
+	};
+
+	template<typename GWReturn, typename... GWArgs>
+	class  GWSignal<GWReturn(GWArgs...)>
 	{
-		for (auto it = _slotLst.begin(); it != _slotLst.end(); ++it)
+	public:
+		void operator() (GWArgs... args)
 		{
-			(*(*it)) (args...);
+			for (auto iter = _slots.begin(); iter != _slots.end(); ++iter)
+				(**iter)(args...);
 		}
-	}
+		~GWSignal()
+		{
+			for (auto _slot : _slots)
+				delete _slot;
+		}
+	private:
+		std::list<GWSlotFunctionBase<GWReturn(GWArgs...)>* >  _slots;
+		friend class GWMetaObject;
+	};
 
-public:
-	SlotLstType  _slotLst;
-};
-
-
-class  GWSlot
-{
-public:
-	explicit GWSlot(void* slot, GWMetaObject* receiver = NULL)
-		:m_receiver(receiver),
-		m_slot(slot)
+	class  GWSlot
 	{
-	}
-	virtual ~GWSlot() {}
-	virtual void operator() (const GWSlot&);
+	public:
+		explicit GWSlot(void* slot, GWMetaObject* receiver = nullptr)
+			:m_receiver(receiver),
+			m_slot(slot) {}
+	public:
+		bool operator==(const GWSlot& other) { return (other.m_slot == m_slot) && (other.m_receiver == m_receiver); }
 
-private:
-	GWSlot& operator= (const GWSlot&) = delete;
+	private:
+		void* m_slot;
+		GWMetaObject* m_receiver;
+		
+		friend class GWMetaObject;
+		friend class GWReceiverFind;
+	};
 
-public:
-	bool operator==(const GWSlot& other)
+	class  GW_CORE_EXPORT GWMetaObject
 	{
-		return other.m_slot == m_slot
-			&& other.m_receiver == m_receiver;
-	}
+	public:
+		explicit GWMetaObject();
+		virtual ~GWMetaObject();
 
-public:
-	GWMetaObject* m_receiver;
-protected:
-	void* m_slot;
-};
+		template<class GWReceiver, typename ...GWArgs>
+		static bool  connect(GWMetaObject* sender, GWSignal<void(GWArgs...)>& signal, GWReceiver* receiver, void (GWReceiver::* SlotFunc) (GWArgs...));
 
-#define SIGNAL_TYPE(SlotFuncType)  list<GWSlot*>
-#define SIGNAL_POINTER(SlotFuncType)  list<GWSlot*>*
-#define SIGNAL_TYPE_ITERATOR(SlotFuncType)  list<GWSlot*>::iterator
+		template<class GWReceiver, typename ...GWArgs>
+		static bool  disconnect(GWMetaObject* sender, GWSignal<void(GWArgs...)>& signal, GWReceiver* receiver, void (GWReceiver::* SlotFunc) (GWArgs...));
 
+	private:
+		static bool  __connect(GWMetaObject* sender, std::list<GWSlot*>* signal, GWMetaObject* receiver, void* slot);
+		static bool  __disconnect(GWMetaObject* sender, std::list<GWSlot*>* signal, GWMetaObject* receiver, void* slot);
+		void pushSignal(GWMetaObject* sender, std::list<GWSlot*>* signal);
+		void freeSignal(GWMetaObject* sender, std::list<GWSlot*>* signal);
+		void pushSlot(GWMetaObject* receiver);
+		void freeSlot(GWMetaObject* receiver);
+		void release();
 
-class  GW_CORE_EXPORT GWMetaObject
-{
-signals:
+	private:
+		GWMetaObjectPrivate* m_private;
+	};
 
-	GWSignal<void(void)> sigDestroyed;
-
-private:
-	GWMetaObjectPrivate* m_priv;
-
-public:
-	explicit GWMetaObject(const char* name = NULL);
-	GWMetaObject(const GWMetaObject& src);
-	GWMetaObject& operator= (const GWMetaObject& src);
-	virtual ~GWMetaObject();
-
-	template<class Receiver, typename ...Args>
-	static int  connect(GWMetaObject* sender, GWSignal<void(Args...)>& signal, Receiver* receiver, void (Receiver::* SlotFunc) (Args...));
-
-	template<class Receiver, typename ...Args>
-	static int  disconnect(GWMetaObject* sender, GWSignal<void(Args...)>& signal, Receiver* receiver, void (Receiver::* SlotFunc) (Args...));
-	const char* name() const;
-
-
-private:
-	static int  privConnect(GWMetaObject* sender, SIGNAL_POINTER(void*) signal, GWMetaObject* receiver, void* slot);
-	static int  privDisconnect(GWMetaObject* sender, SIGNAL_POINTER(void*) signal, GWMetaObject* receiver, void* slot);
-	void saveSenderPair(GWMetaObject* sender, SIGNAL_POINTER(void*) signal);
-	void deleteSenderPair(GWMetaObject* sender, SIGNAL_POINTER(void*) signal);
-	void destructAsReceiver();
-	void destructAsSender();
-	void saveReceiver(GWMetaObject* receiver);
-	void deleteReceiver(GWMetaObject* receiver);
-};
-
-template<class Receiver, typename ...Args>
-int  GWMetaObject::connect(GWMetaObject* sender, GWSignal<void(Args...)>& signal, Receiver* receiver, void (Receiver::* SlotFunc) (Args...))
-{
-	GWSlotCpp<Receiver, void(Args...)>* vslot = new GWSlotCpp<Receiver, void(Args...)>(receiver, SlotFunc);
-	int ret = privConnect(sender, reinterpret_cast<SIGNAL_POINTER(void*)>(&(signal._slotLst)), (GWMetaObject*)receiver, (void*)vslot);
-	if (0 != ret)
+	template<class GWReceiver, typename ...GWArgs>
+	bool  GWMetaObject::connect(GWMetaObject* sender, GWSignal<void(GWArgs...)>& signal, GWReceiver* receiver, void (GWReceiver::* SlotFunc) (GWArgs...))
 	{
-		delete vslot;
+		GWSlotFunction<GWReceiver, void(GWArgs...)>* _slotfunc = new GWSlotFunction<GWReceiver, void(GWArgs...)>(receiver, SlotFunc);
+		return __connect(sender, reinterpret_cast<std::list<GWSlot*>*>(&(signal._slots)), (GWMetaObject*)receiver, (void*)_slotfunc);
 	}
-	return ret;
-}
 
-template<class Receiver, typename ...Args>
-int  GWMetaObject::disconnect(GWMetaObject* sender, GWSignal<void(Args...)>& signal, Receiver* receiver, void (Receiver::* SlotFunc) (Args...))
-{
-	int ret = privDisconnect(sender, reinterpret_cast<SIGNAL_POINTER(void*)>(&(signal._slotLst)), (GWMetaObject*)receiver, static_cast<void*>(&SlotFunc));
-	return ret;
+	template<class GWReceiver, typename ...GWArgs>
+	bool  GWMetaObject::disconnect(GWMetaObject* sender, GWSignal<void(GWArgs...)>& signal, GWReceiver* receiver, void (GWReceiver::* SlotFunc) (GWArgs...))
+	{
+		return __disconnect(sender, reinterpret_cast<std::list<GWSlot*>*>(&(signal._slots)), (GWMetaObject*)receiver, (void*)&SlotFunc);
+	}
 }
 
 #endif // GWMetaObject_H

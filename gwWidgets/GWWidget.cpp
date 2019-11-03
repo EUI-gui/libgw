@@ -160,8 +160,6 @@ void GW::GWWidget::paintEvent()
 	Rectangle(dc, rect.left, rect.top, rect.right, rect.bottom);
 
 	ReleaseDC(m_private->m_hwnd,dc);
-
-	std::cout << this << ":paintEvent" << endl;
 }
 
 void GW::GWWidget::resizeEvent()

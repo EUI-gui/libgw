@@ -1,18 +1,18 @@
 #include "GWWidget.h"
 #include "GWApplication.h"
-#include <windows.h>
 #include "GWPainter.h"
+
 using namespace GW;
 
 class Signaler : public GWObject
 {
 signals:
-	GWSignal<void(const char*, int)> sig;
-
+	GWSignal<void(int)> sig;
 public:
 	void emitSignal()
 	{
-		emit sig("libGW!", 1);
+		std::cout << "emit signal" << std::endl;
+		emit sig(1);
 	}
 };
 
@@ -22,11 +22,11 @@ public:
 	slotWidget(GWObject* parent = nullptr) : GWWidget(parent) {}
 
 public slots:
-	void sltfunc(const char* msg, int number)
+	void sltfunc(int a)
 	{
-		std::cout << "msg:" << msg << std::endl;
-		std::cout << "number:" << number << endl;
+		std::cout << "this is a slot function." <<std::endl;
 	}
+
 public:
 	virtual void paintEvent()
 	{
@@ -37,8 +37,6 @@ public:
 			painter.drawRect(this->rect());
 		}
 		painter.restore();
-
-		std::cout << this << ":paintEvent:вс" << endl;
 	}
 };
 
@@ -53,10 +51,11 @@ int main(int argc, char*argv[])
 
 	slotWidget w2(&w);
 	w2.resize(800,600);
-	w2.show();
 
 	GWObject::connect(&signaler, signaler.sig, &w2, &slotWidget::sltfunc);
+	signaler.emitSignal();
 
+	GWObject::disconnect(&signaler, signaler.sig, &w2, &slotWidget::sltfunc);
 	signaler.emitSignal();
 
 	return app.exec();
