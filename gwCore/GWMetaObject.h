@@ -1,3 +1,28 @@
+/**
+*  This project is in preparation. 
+*  If you want to participate in the modification of the project or have good Suggestions, 
+*  please contact the email address "827105513@qq.com".
+*
+*  This project is an open source project, only for learning. 
+*  Please delete this work within 24 hours, otherwise the author will not bear any 
+*  legal responsibility before releasing the commercial version.
+*  
+*  GUI interface library modeled on "Qt". "Libgw" can be compiled
+*  into static libraries to make your application clean and efficient.
+
+*  USES the "c++11" standard, mimics the "QT" "signal and slot" syntax, 
+*  but does not generate any "Moc" files.
+
+*  In the open source code of "libgw", the realization of "signal and slot" 
+*  is borrowed from the open source project "GObject". The author of "GObject" 
+*  is signed "mingxin" and belongs to "shenzhen jida technology co., LTD., China".
+*  The author is willing to follow the open source protocol of "GObject" open source project.
+
+*  I comply with the GNU AGPL v3 license and promise not to charge any 
+*  fees for any "open source" time written in the license and to provide 
+*  fees to authors as necessary under the GNU AGPL v3 license.
+*/
+
 #ifndef GWMetaObject_H
 #define GWMetaObject_H
 
@@ -24,8 +49,7 @@ namespace GW
 	{
 	public:
 		explicit GWSlotFunctionBase(void* slot, GWMetaObject* receiver = nullptr)
-			:m_receiver(receiver),
-			m_slot(slot) {}
+			:m_receiver(receiver),m_slot(slot) {}
 		GWMetaObject* getReceiver() { return m_receiver; }
 		virtual void operator() (GWArgs&... args) = 0;
 
@@ -41,8 +65,7 @@ namespace GW
 	public:
 		typedef void (GWReceiver::* GWSlotPtr) (GWArgs...);
 
-		GWSlotFunction(GWReceiver* receiver, GWSlotPtr slot)
-			: GWSlotFunctionBase<GWReturn(GWArgs...)>((void*)&slot, (GWMetaObject*)receiver),
+		GWSlotFunction(GWReceiver* receiver, GWSlotPtr slot) : GWSlotFunctionBase<GWReturn(GWArgs...)>((void*)&slot, (GWMetaObject*)receiver),
 			m_slotfunc(slot) {}
 
 	public:
